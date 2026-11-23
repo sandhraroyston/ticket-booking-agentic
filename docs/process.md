@@ -39,7 +39,8 @@ Rules that follow from this:
 - **The job name `ci` is load-bearing. Never rename it**, or every PR becomes unmergeable.
 - **As soon as `backend/` and `frontend/` exist (phases 2–4), replace the echo with real lint
   and test steps in the same `ci` job.** Don't wait for phase 9. Whoever adds
-  `backend/` or `frontend/` also wires its lint/tests into `ci` in the same PR.
+  `backend/` or `frontend/` also wires its lint/tests into `ci` in the same PR. That scaffold PR
+  may also add the matching `make lint` / `make test` targets (decision Q17 in `docs/spec.md`).
 - Phase 9 extends `ci` (Semgrep, contract check, image build) and adds `cd-dev.yml` and
   `deploy-prod.yml`.
 

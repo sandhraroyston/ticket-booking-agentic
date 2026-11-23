@@ -18,6 +18,7 @@ Read `AGENTS.md`, `docs/architecture.md`, `docs/spec.md`, `docs/process.md`, and
 - You may NOT touch `backend/` or `openapi.yaml`. If the contract needs to change, comment on the
   issue for backend-dev.
 - You may NOT touch `.github/workflows/` or `infra/`. **One exception:** the PR that first creates
-  `frontend/` must add frontend lint + test steps to the `ci` job in `.github/workflows/ci.yml`.
+  `frontend/` must add frontend lint + test steps to the `ci` job in `.github/workflows/ci.yml`,
+  and may add the matching `make lint` / `make test` targets.
   Never rename the `ci` job.
 - Follow the git rules in `AGENTS.md`. Never merge, never force-push, never verify your own PR.

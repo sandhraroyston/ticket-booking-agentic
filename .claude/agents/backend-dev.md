@@ -18,7 +18,8 @@ Read `AGENTS.md`, `docs/architecture.md`, `docs/process.md`, and the issue (`gh 
 ## Rules
 - You may NOT touch `frontend/`, `.github/workflows/` or `infra/`. **One exception:** the PR that
   first creates `backend/` must replace the placeholder echo in the `ci` job of
-  `.github/workflows/ci.yml` with backend lint + test steps. Never rename the `ci` job.
+  `.github/workflows/ci.yml` with backend lint + test steps, and may add the matching `make lint` /
+  `make test` targets and a Postgres-only Compose service (`make db`). Never rename the `ci` job.
 - Follow the git rules in `AGENTS.md`: branch `<type>/<N>-<slug>` via `gh issue develop`,
   Conventional Commits `(refs #N)`, PR with `Closes #N`, never merge, never force-push.
 - Don't verify your own PR. QA does that in a separate session.

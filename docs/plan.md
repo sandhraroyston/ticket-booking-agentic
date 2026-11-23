@@ -51,7 +51,7 @@ users(id, email, password_hash, created_at)
 venues(id, name, city)
 events(id, venue_id, name, starts_at, description)
 seats(id, event_id, section, row, number, price_cents, status[available|held|sold])
-reservations(id, user_id, event_id, expires_at, status[active|expired|converted])
+reservations(id, user_id, event_id, expires_at, status[active|expired|released|converted])
 reservation_seats(reservation_id, seat_id)  -- unique(seat_id) for active holds
 orders(id, user_id, reservation_id, total_cents, confirmation_code, created_at)
 

@@ -1,13 +1,12 @@
 # Placeholder CI (bootstrap decision, see docs/plan.md section 11 and docs/process.md).
-# The main ruleset requires the status check "ci". Do NOT rename the job.
+# The develop and main rulesets require the status check "ci". Do NOT rename the job.
 # As soon as backend/ and frontend/ exist (phases 2-4), replace the echo below with real
 # lint and test steps in this same job.
 name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
+    branches: [develop, main]
 
 jobs:
   ci:

@@ -15,5 +15,5 @@
 - **Agents**: subagents have scoped tools (see `.claude/agents/`). Agents never deploy to prod,
   never merge, and never force-push. Prod deploy needs human approval through the `production`
   environment.
-- **Branch protection**: a ruleset on `main` requires PRs and the `ci` check, and blocks force
-  pushes and deletion.
+- **Branch protection**: rulesets on `develop` and `main` require PRs and the `ci` check, and block
+  force pushes and deletion. Prod is deployed only from `main`.

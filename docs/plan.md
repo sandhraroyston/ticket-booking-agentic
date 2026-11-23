@@ -84,17 +84,24 @@ Separate sessions for grooming, implementation and verification. The agent that 
 verifies its own work.
 
 1. `/groom <issue>`: product-owner makes the issue ready (label `ready`).
-2. `/clear` then `/implement <issue>`: branch linked to issue (`gh issue develop`), code + tests,
-   small commits `feat(scope): msg (refs #N)`, push, open PR with `Closes #N`. Never merge.
+2. `/clear` then `/implement <issue>`: branch cut from `develop` and linked to the issue
+   (`gh issue develop <N> --base develop`), code + tests, small commits
+   `feat(scope): msg (refs #N)`, push, open a PR into `develop` with `Closes #N`. Never merge.
 3. `/clear` then `/verify <pr>`: qa checks out the PR fresh, runs `make test`, checks each
    acceptance criterion, posts APPROVE / CHANGES NEEDED as a PR comment.
-4. Human reviews diff + QA verdict, then `/ship <pr>` (squash auto-merge after CI is green).
-5. Merge to main → CD deploys to dev automatically. Prod deploy is manual with approval.
+4. Human reviews diff + QA verdict, then `/ship <pr>` (squash auto-merge into `develop` after CI is green).
+5. Merge to `develop` → CD deploys to dev automatically.
+6. Release: PR `develop → main`, verified and shipped with a merge commit (not squash). Prod
+   deploy is manual with approval, from `main` only.
 
-Git rules: never commit/push to main; one issue = one branch = one PR; branch name
+Branching: `develop` is the default/integration branch and `main` is production; both are protected
+(PR + `ci` required, no force push, no approvals). Squash merges into `develop`, merge commits
+for `develop → main` releases.
+
+Git rules: never commit/push directly to `develop` or `main`; one issue = one branch = one PR; branch name
 `<type>/<issue>-<slug>`; Conventional Commits; never force-push; use `gh` for GitHub actions.
 
-Parallel work: independent issues run in separate git worktrees (`git worktree add ../tb-<N> -b <branch>`),
+Parallel work: independent issues run in separate git worktrees created from `develop` (`git worktree add ../tb-<N> -b <branch> origin/develop`),
 each with its own Claude session and its own COMPOSE_PROJECT_NAME/ports. Max 3 at a time. Remove
 worktrees after merge.
 
@@ -125,14 +132,17 @@ worktrees after merge.
   OpenAPI contract check, build images.
 - Placeholder CI (bootstrap decision): the main ruleset requires the `ci` status check, and a
   required check that never runs would block every PR. So bootstrap creates a placeholder
-  `.github/workflows/ci.yml` (on `pull_request` and `push` to main) with one job named exactly
+  `.github/workflows/ci.yml` (on pull requests to `develop` and `main`) with one job named exactly
   `ci` that checks out the code and echoes "CI placeholder OK". It is pushed to main before the
   ruleset is created. As soon as backend/ and frontend/ exist (phases 2–4), replace the echo
   with real lint and test steps in the same `ci` job. Don't wait for phase 9. Never rename the
   job: the ruleset depends on the name `ci`. Phase 9 then adds the remaining steps.
-- `cd-dev.yml` (push to main): build + push images to GHCR, deploy to dev.
+- `ci.yml` runs on pull requests to `develop` and `main`. Both branches have a ruleset requiring
+  it (`develop`: squash merges only; `main`: merge commits only).
+- `cd-dev.yml` (push to `develop`): build + push images to GHCR, deploy to dev.
 - `deploy-prod.yml` (manual workflow_dispatch, GitHub environment `production` with required
-  approval): deploy the chosen image tag to prod.
+  approval): deploy a chosen image tag **built from `main`** to prod. Tags not built from `main`
+  are rejected.
 - Hosting: one small cloud VM running Docker Compose with separate dev and prod stacks
   (deploy over SSH from Actions). Public URLs documented in README.
 
@@ -197,6 +207,8 @@ docs/ spec.md architecture.md agents.md process.md observability.md security.md
    first `ci` run to pass so the check exists.
 4. With `gh api`: enable auto-merge, delete-branch-on-merge, squash merges; add a ruleset on main
    requiring PRs and the `ci` status check, blocking force pushes (no required approvals: solo developer).
+   Later change (issue #46): `develop` was created from `main` and made the default branch, and
+   both `develop` and `main` are protected (see §8).
 5. Create labels (feature, bug, chore, docs, infra, ready, incident).
 6. Create a public GitHub Project board linked to the repo.
 7. Product-owner subagent: create issues for phases 1–12 using the task template, add them to the board.

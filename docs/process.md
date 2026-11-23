@@ -5,6 +5,9 @@ How work flows from idea to production. Grooming, implementation and verificatio
 
 ## Workflow
 
+Start every session with `/status` (read-only). It reports the current branch, open PRs with CI and
+QA verdicts, issues in progress, and the next `ready` issue, then recommends one next command.
+
 1. **Groom**: `/groom <issue>`. The product-owner makes the issue ready: goal, acceptance
    criteria, out of scope, test plan. Then it adds the label `ready`.
 2. **Implement**: `/clear`, then `/implement <issue>`. The dev agent creates a branch linked to

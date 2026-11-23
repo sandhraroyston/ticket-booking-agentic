@@ -5,6 +5,7 @@ argument-hint: <pr-number>
 
 Use the **qa** subagent to verify PR #$ARGUMENTS. Follow the procedure in `.claude/agents/qa.md`.
 
+0. Check CI first: `gh pr checks $ARGUMENTS`. If CI is red, post CHANGES NEEDED with the failing job and stop.
 1. `gh pr view $ARGUMENTS --json baseRefName,headRefName,title,body` and check the base branch:
    - **Base `develop`** (normal work): the head must be a `<type>/<N>-<slug>` branch and the body
      must contain `Closes #N`. Read the linked issue's acceptance criteria.

@@ -52,7 +52,7 @@ Stack: React + Vite + TypeScript (frontend), FastAPI + SQLAlchemy 2 + Alembic on
 | User stories, acceptance criteria | `docs/spec.md` |
 | Components, data model, API | `docs/architecture.md` |
 | Agent team and permissions | `docs/agents.md`, `.claude/agents/` |
-| Groom → implement → verify → ship | `docs/process.md` |
+| Groom → implement → verify → ship | `docs/process.md` (start a session with `/status`) |
 | Telemetry, dashboards, PII rules | `docs/observability.md` |
 | Security practices | `docs/security.md` |
 | How AI is used in this project | `docs/ai-workflow.md` |

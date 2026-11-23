@@ -1,0 +1,45 @@
+name: Task
+description: A unit of work that fits in one PR (about half a day)
+title: "<imperative, specific title>"
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What outcome does this deliver, and why?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: 3–7 testable checkboxes, preferably Given / When / Then, with at least one error case. Add non-functional criteria when relevant.
+      value: |
+        - [ ] Given ..., when ..., then ...
+        - [ ] Given ..., when ..., then ... (error case)
+        - [ ] Tests added and `make test` passes
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test plan
+      description: How QA will verify each criterion (unit, integration, e2e, manual).
+    validations:
+      required: true
+  - type: input
+    id: depends
+    attributes:
+      label: Depends on
+      placeholder: "#N"
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase (docs/plan.md §13)
+      options: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"]

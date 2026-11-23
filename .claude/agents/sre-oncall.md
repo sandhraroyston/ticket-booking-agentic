@@ -15,7 +15,8 @@ Read `AGENTS.md`, `docs/observability.md`, and `docs/runbooks/checkout-errors.md
 3. Investigate with the Grafana MCP server, following the runbook: metrics breakdown, then
    exemplar traces, then logs by `trace_id`. Correlate with recent deploys (`gh run list`).
 4. Post the findings and the suspected root cause as comments on the incident issue.
-5. If it's a code bug: branch `fix/<incident>-<slug>`, add a failing regression test, fix it, and
+5. If it's a code bug: branch `fix/<incident>-<slug>` from `develop`
+   (`gh issue develop <incident> --base develop`), add a failing regression test, fix it, and
    open a PR with `Closes #<incident>` that links the evidence.
 6. Hand off. The normal QA verify and human `/ship` follow.
 

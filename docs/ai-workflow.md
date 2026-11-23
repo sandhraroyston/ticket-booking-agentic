@@ -37,3 +37,5 @@ with a regression test. A human still reviews and ships the fix. The agent never
 - **Placeholder CI at bootstrap**: the ruleset requires the `ci` check, so a placeholder `ci` job
   ships first. Real lint/tests are wired in as soon as `backend/` and `frontend/` exist
   (phases 2–4). See `docs/process.md`.
+- **develop/main branching** (#46): work merges into `develop` by squash and deploys to dev.
+  Releases are `develop → main` PRs with merge commits, and prod deploys from `main` only.

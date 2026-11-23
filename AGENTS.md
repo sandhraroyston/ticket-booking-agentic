@@ -26,8 +26,14 @@ Stack: React + Vite + TypeScript (frontend), FastAPI + SQLAlchemy 2 + Alembic on
 
 ## Rules (non-negotiable)
 
-- Never commit or push to `main`. One issue = one branch = one PR (`Closes #N`).
-- Branch name: `<type>/<issue>-<slug>`, e.g. `feat/12-seat-hold`.
+- Branching: `develop` is the default and integration branch; `main` is production.
+  Never commit or push directly to `develop` or `main`.
+- Feature, fix and chore branches are cut from `develop` with
+  `gh issue develop <N> --base develop --name <type>/<N>-<slug> --checkout` and merged back into
+  `develop` by a **squash** PR. One issue = one branch = one PR (`Closes #N`).
+- Releases are a PR from `develop` into `main`, merged with a **merge commit** (never squash).
+  Merging to `develop` deploys to dev. Prod is deployed manually, with approval, from `main` only.
+- Branch name: `<type>/<issue>-<slug>`, e.g. `feat/12-seat-hold`. Worktrees are created from `develop`.
 - Conventional Commits: `feat(scope): msg (refs #N)`. Small commits. Never force-push.
 - Use `gh` for every GitHub action.
 - The agent that builds never verifies its own work (see `docs/process.md`).

@@ -21,5 +21,12 @@ Use the **qa** subagent to verify PR #$ARGUMENTS. Follow the procedure in `.clau
    verdict and that dev has been deployed from this `develop` commit and is healthy.
 5. Post one comment with `gh pr comment $ARGUMENTS`: **APPROVE** or **CHANGES NEEDED**, a table by
    criterion (or, for a release, by included PR), and a summary of the test output.
+6. Post a handoff comment on the linked issue (for a release PR, on the PR itself), using the
+   format in `docs/process.md` → Handoff comments, with `Handoff: verify`. Next is `/ship <pr>` if
+   approved, or `/implement <issue>` to fix the listed problems.
+
+**If you stop before finishing** (CI red at step 0, an environment problem, an open question, or
+the session is ending), still post `Handoff: stopped` on the linked issue saying what was checked,
+what wasn't, and why.
 
 Never merge. Never change app logic to make things pass.

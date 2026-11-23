@@ -17,5 +17,13 @@ Implement issue #$ARGUMENTS.
 6. `git push -u origin HEAD`, then open the PR **into `develop`**:
    `gh pr create --base develop` with a body from `.github/pull_request_template.md` that
    includes `Closes #$ARGUMENTS`.
-7. **Do not merge. Do not verify your own work.** Report the PR URL and tell me to run
+7. Post a handoff comment on the issue (`gh issue comment $ARGUMENTS --body ...`) using the
+   format in `docs/process.md` → Handoff comments, with `Handoff: implement` and
+   Next = `/verify <pr>`.
+8. **Do not merge. Do not verify your own work.** Report the PR URL and tell me to run
    `/clear` then `/verify <pr>`.
+
+**If you stop before finishing** (blocked, a failing test you can't fix, an open question, the
+session is ending, or I interrupt), first commit and push work in progress to the branch
+(`wip(scope): ... (refs #$ARGUMENTS)`), then post `Handoff: stopped` on the issue saying what is
+done, what remains, and what blocks you. Never leave an issue half-done without a handoff.

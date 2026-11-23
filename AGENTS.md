@@ -37,6 +37,8 @@ Stack: React + Vite + TypeScript (frontend), FastAPI + SQLAlchemy 2 + Alembic on
 - Conventional Commits: `feat(scope): msg (refs #N)`. Small commits. Never force-push.
 - Use `gh` for every GitHub action.
 - The agent that builds never verifies its own work (see `docs/process.md`).
+- End every `/implement` and `/verify` session, and any session that stops midway, with a
+  `Handoff:` comment on the issue (format in `docs/process.md`). Push work in progress first.
 - Never merge your own PR. A human runs `/ship`.
 - `openapi.yaml` is the API source of truth. Change it first, then code.
 - Never put emails, passwords, tokens or payment data in logs or telemetry.

@@ -27,6 +27,22 @@ QA verdicts, issues in progress, and the next `ready` issue, then recommends one
 7. **Deploy to prod**: manual only (`deploy-prod.yml`, `production` environment with required
    approval), and only from `main`.
 
+## Handoff comments
+
+Sessions are cleared between steps, so the issue thread carries the state. Every `/implement`
+and `/verify` session ends with a handoff comment on the issue (a release PR gets it on the PR).
+So does any session that **stops midway**: blocked, interrupted, out of time, or waiting on a
+question. Work in progress is committed and pushed before the comment is posted. `/status` reads
+the latest `Handoff:` comment on each issue in progress.
+
+```
+Handoff: <implement | verify | stopped> — <one-line summary>
+- Branch / PR: <branch>, #<pr> (or "none yet")
+- Done: <what was completed, last commit SHA>
+- Next: <the exact next step / command, e.g. `/verify 52`>
+- Blockers / questions: <none, or what needs the human>
+```
+
 ## Branching model
 
 ```

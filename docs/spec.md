@@ -35,11 +35,12 @@ As a buyer, I want to sign up and log in with my email and password, so that I c
 and see my orders.
 
 Decisions: Q3 (JWT 60 min, no refresh token), Q4 (password at least 8 characters), Q10 (token in
-sessionStorage).
+sessionStorage), Q21 (signup also logs in).
 
 - [ ] Given a new email and a password of at least 8 characters, when I sign up
-  (`POST /auth/signup`), then the response is 201 and the password is stored only as a hash
-  (argon2 or bcrypt), never in plaintext.
+  (`POST /auth/signup`), then the response is 201 with a signed JWT (same shape as login), so I
+  am logged in right away, and the password is stored only as a hash (argon2 or bcrypt), never
+  in plaintext.
 - [ ] Given valid credentials, when I log in (`POST /auth/login`), then the response is 200 with a
   signed JWT that expires after 60 minutes (configurable by env). No refresh token is issued.
 - [ ] Given I am logged in, when I call a protected endpoint (reservations, checkout, orders),
@@ -59,10 +60,13 @@ sessionStorage).
 
 As a buyer, I want to see upcoming events, so that I can choose one to attend.
 
+Decisions: Q22 (prices in INR), Q23 (no pagination).
+
 - [ ] Given seeded events, when I open the events list (`GET /events`), then only events with
   `starts_at` in the future are shown, sorted by `starts_at` ascending.
 - [ ] Given an event in the list, when it is shown, then it has its name, venue name and city,
-  date/time and price range (min–max of its seat prices; cents in the API).
+  date/time and price range (min–max of its seat prices; integer paise in the API, shown in INR
+  per Q22).
 - [ ] Given an event, when I open it (`GET /events/{id}`), then I see the same fields plus its
   description.
 - [ ] Given I am not logged in, when I browse events, then the list and the event page still work
@@ -303,6 +307,9 @@ Decided by the human on 2026-11-23 while the backlog was groomed. Issues link he
 | Q18 | Local Postgres before phase 7 | #8 adds a **Postgres-only Compose service** (`make db`). #26 extends that same compose file to the full stack | #8, #26 |
 | Q19 | Labels | One type label plus `phase-<n>`. Test-only work uses **`chore`** | all |
 | Q20 | `make load` | Built in **phase 8** (#32) so the dashboard can be checked with traffic; reused in phases 10–11 | #32 |
+| Q21 | Signup response | `POST /auth/signup` returns **201 with a JWT** (same token response as login), so the buyer is logged in right after signup. Decided 2026-11-24 | #5, #7, #11, #20 |
+| Q22 | Currency | One currency: **INR**. The API sends integer **paise** (the existing `*_cents` fields hold the minor unit, i.e. paise). The UI formats with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`, e.g. `₹1,250.00`, `₹1,25,000.00`. Decided 2026-11-24 | #3, #4, #6, #7, #10, #12 |
+| Q23 | Events pagination | **None for now.** `GET /events` returns all upcoming events in one list. Decided 2026-11-24 | #7, #12 |
 
 ## Open questions
 
@@ -311,10 +318,7 @@ depend on an answer until the human decides and the answer moves to [Decisions](
 
 | # | Question | Where it matters | Current state |
 |---|---|---|---|
-| OQ1 | Does `POST /auth/signup` also return a JWT, or does the client call `POST /auth/login` after signup? #5 says the buyer is signed in after signup; #11 only says signup returns 201. | US-1, #5, #7, #11, #20 | Either way meets US-1. Decide while #7 (`openapi.yaml`) is written. |
 | OQ2 | Which cloud provider hosts the VM? | #35–#38 | Placeholder in Q14a. The human decides before phase 9. |
-| OQ3 | Which single currency are prices shown in, and in what format? | US-2, US-3, US-6, US-8, #3, #4, #6 | Prices are integer cents. Multiple currencies are out of scope, but the one currency is not named. |
-| OQ4 | Does `GET /events` need pagination? | US-2, #7, #12 | Not required. The seed has 3 upcoming events (Q9). |
 | OQ5 | When does the `e2e` CI job become a required check? | #24 | Q13 says "not required; may become required once stable". No criterion for "stable" yet. |
 
 ## Out of scope

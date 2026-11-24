@@ -29,8 +29,9 @@ QA verdicts, issues in progress, and the next `ready` issue, then recommends one
 
 ## Fast track
 
-Low-risk changes may skip step 3 (Verify). Use `/quick <issue>` instead of `/implement`, and the
-PR gets the label **`fast-track`**. The fast track still needs:
+Low-risk changes may skip step 3 (Verify). Use `/quick <what to change>` instead of
+`/groom` → `/implement`: it creates the issue, the branch and a PR with the label
+**`fast-track`**, then stops for review. The fast track still needs:
 
 - an issue (labeled `fast-track`),
 - a branch cut from `develop` and a PR **into `develop`** with `Closes #N`,

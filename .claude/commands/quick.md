@@ -3,7 +3,8 @@ description: Fast-track a small non-code change (docs, agent/command files, conf
 argument-hint: <what to change>
 ---
 Only for changes listed as fast-track in docs/process.md. If the change touches
-backend/, frontend/, migrations, workflows, Docker or deploy files, stop and tell me
+backend/, frontend/, migrations, workflows, Docker or deploy files, or anything to do with
+security, auth or telemetry, stop and tell me
 to use the normal /groom → /implement → /verify flow.
 
 1. Create a small issue (`gh issue create`) with type label chore or docs plus `fast-track`.

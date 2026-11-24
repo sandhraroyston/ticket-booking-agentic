@@ -304,6 +304,19 @@ Decided by the human on 2026-11-23 while the backlog was groomed. Issues link he
 | Q19 | Labels | One type label plus `phase-<n>`. Test-only work uses **`chore`** | all |
 | Q20 | `make load` | Built in **phase 8** (#32) so the dashboard can be checked with traffic; reused in phases 10–11 | #32 |
 
+## Open questions
+
+These items are **not decided**, so they are **not requirements**. Stories and issues must not
+depend on an answer until the human decides and the answer moves to [Decisions](#decisions).
+
+| # | Question | Where it matters | Current state |
+|---|---|---|---|
+| OQ1 | Does `POST /auth/signup` also return a JWT, or does the client call `POST /auth/login` after signup? #5 says the buyer is signed in after signup; #11 only says signup returns 201. | US-1, #5, #7, #11, #20 | Either way meets US-1. Decide while #7 (`openapi.yaml`) is written. |
+| OQ2 | Which cloud provider hosts the VM? | #35–#38 | Placeholder in Q14a. The human decides before phase 9. |
+| OQ3 | Which single currency are prices shown in, and in what format? | US-2, US-3, US-6, US-8, #3, #4, #6 | Prices are integer cents. Multiple currencies are out of scope, but the one currency is not named. |
+| OQ4 | Does `GET /events` need pagination? | US-2, #7, #12 | Not required. The seed has 3 upcoming events (Q9). |
+| OQ5 | When does the `e2e` CI job become a required check? | #24 | Q13 says "not required; may become required once stable". No criterion for "stable" yet. |
+
 ## Out of scope
 
 Real payments, emails, refunds, multiple currencies.

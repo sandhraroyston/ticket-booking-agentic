@@ -27,6 +27,30 @@ QA verdicts, issues in progress, and the next `ready` issue, then recommends one
 7. **Deploy to prod**: manual only (`deploy-prod.yml`, `production` environment with required
    approval), and only from `main`.
 
+## Fast track
+
+Low-risk changes may skip step 3 (Verify). Use `/quick <what to change>` instead of
+`/groom` → `/implement`: it creates the issue, the branch and a PR with the label
+**`fast-track`**, then stops for review. The fast track still needs:
+
+- an issue (labeled `fast-track`),
+- a branch cut from `develop` and a PR **into `develop`** with `Closes #N`,
+- a green `ci` check,
+- the human's review of the diff before `/ship`.
+
+| May skip QA (fast track) | Always needs QA (`/verify`) |
+|---|---|
+| Docs: `docs/`, `README.md`, `AGENTS.md`, `CLAUDE.md` | `backend/` (app code, tests) |
+| `.claude/` agents, commands, settings | `frontend/` (app code, tests) |
+| Templates: `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md` | Database migrations |
+| Small dependency bumps (patch/minor, lockfile only, CI green) | Workflows (`.github/workflows/`) |
+| | Docker, Compose, deploy, infra |
+| | Anything touching security, auth, telemetry or PII |
+| | Release PRs (`develop → main`) |
+
+If a change mixes both columns, it is **not** fast track. `/ship` checks the changed files of a
+`fast-track` PR and refuses if any is in the right-hand column.
+
 ## Handoff comments
 
 Sessions are cleared between steps, so the issue thread carries the state. Every `/implement`
@@ -102,4 +126,4 @@ worktrees after merge (`git worktree remove ../tb-<N>`).
 
 ## Labels
 
-feature, bug, chore, docs, infra, ready, incident.
+feature, bug, chore, docs, infra, ready, incident, fast-track (see [Fast track](#fast-track)).

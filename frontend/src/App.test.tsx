@@ -17,9 +17,10 @@ function renderAt(path: string) {
 }
 
 describe('App', () => {
-  it('renders the placeholder home page', () => {
+  it('renders the events home page', async () => {
     renderAt('/')
-    expect(screen.getByRole('heading', { level: 1, name: /find your seat/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: /upcoming events/i })).toBeInTheDocument()
+    expect(await screen.findByText('Monsoon Jazz Night')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /ticket booking/i })).toHaveAttribute('href', '/')
   })
 
@@ -28,6 +29,7 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: /page not found/i })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('link', { name: /back to home/i }))
-    expect(screen.getByRole('heading', { name: /find your seat/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /upcoming events/i })).toBeInTheDocument()
+    expect(await screen.findByText('Monsoon Jazz Night')).toBeInTheDocument()
   })
 })

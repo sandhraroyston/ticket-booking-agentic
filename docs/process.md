@@ -126,4 +126,5 @@ worktrees after merge (`git worktree remove ../tb-<N>`).
 
 ## Labels
 
-feature, bug, chore, docs, infra, ready, incident, fast-track (see [Fast track](#fast-track)).
+feature, bug, chore, docs, infra, ready, incident, fast-track (see [Fast track](#fast-track)),
+needs-opus (build this issue with opus; see `docs/agents.md` → When to upgrade a model).

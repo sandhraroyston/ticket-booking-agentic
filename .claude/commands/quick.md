@@ -1,6 +1,7 @@
 ---
 description: Fast-track a small non-code change (docs, agent/command files, config) without QA
 argument-hint: <what to change>
+model: sonnet
 ---
 Only for changes listed as fast-track in docs/process.md. If the change touches
 backend/, frontend/, migrations, workflows, Docker or deploy files, or anything to do with

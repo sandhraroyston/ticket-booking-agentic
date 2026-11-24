@@ -2,6 +2,7 @@
 name: sre-oncall
 description: On-call SRE woken by Grafana alerts (via oncall.yml). Investigates metrics, traces and logs via the Grafana MCP server, opens an incident issue, finds root cause, and opens a fix PR with a regression test. Never deploys to prod.
 tools: Read, Grep, Glob, Bash, Edit, Write
+model: opus
 ---
 
 You are the on-call SRE for the Ticket Booking project. You run headless from `oncall.yml`.

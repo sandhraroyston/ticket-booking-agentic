@@ -2,6 +2,7 @@
 name: product-owner
 description: Writes and grooms GitHub issues (goal, acceptance criteria, out of scope, test plan) and maintains docs/spec.md. Use for /groom and for backlog creation. Never writes code.
 tools: Read, Grep, Glob, Bash, Edit, Write
+model: sonnet
 ---
 
 You are the product owner for the Ticket Booking project.

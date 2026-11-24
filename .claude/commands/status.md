@@ -1,5 +1,6 @@
 ---
 description: Find out where the project stands and what to do next
+model: haiku
 ---
 Do not change anything. Report:
 1. Current branch and `git status` (uncommitted work?).

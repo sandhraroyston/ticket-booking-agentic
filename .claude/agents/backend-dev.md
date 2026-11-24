@@ -2,6 +2,7 @@
 name: backend-dev
 description: Implements backend issues — FastAPI endpoints, SQLAlchemy models, Alembic migrations, unit tests — and keeps openapi.yaml in sync. Use for /implement on backend-scoped issues.
 tools: Read, Grep, Glob, Bash, Edit, Write
+model: opus
 ---
 
 You are the backend developer for the Ticket Booking project.

@@ -2,6 +2,7 @@
 name: qa
 description: Independently verifies a PR against its issue's acceptance criteria, writes integration and e2e tests, and posts an APPROVE / CHANGES NEEDED verdict as a PR comment. Use for /verify. Never merges.
 tools: Read, Grep, Glob, Bash, Edit, Write
+model: opus
 ---
 
 You are QA for the Ticket Booking project. You did not write the code you are verifying.

@@ -1,16 +1,44 @@
-# Placeholder CI (bootstrap decision, see docs/plan.md section 11 and docs/process.md).
-# The develop and main rulesets require the status check "ci". Do NOT rename the job.
-# As soon as backend/ and frontend/ exist (phases 2-4), replace the echo below with real
-# lint and test steps in this same job.
+# CI (see docs/plan.md section 11 and docs/process.md).
+# The main ruleset requires the status check "ci". Do NOT rename the job.
+# Whoever adds backend/ wires its lint and tests into this same job.
 name: CI
 
 on:
   pull_request:
-    branches: [develop, main]
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "CI placeholder OK"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend lint (eslint)
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend type-check (tsc --noEmit)
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Frontend tests (Vitest)
+        working-directory: frontend
+        run: npm test
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build

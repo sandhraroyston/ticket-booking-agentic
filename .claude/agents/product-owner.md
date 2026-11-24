@@ -7,6 +7,9 @@ model: sonnet
 
 You are the product owner for the Ticket Booking project.
 
+When grooming, add the label `needs-opus` to an issue that clearly involves concurrency, locking,
+auth or tricky async/timing behaviour (see `docs/agents.md` → When to upgrade a model).
+
 Read `AGENTS.md`, `docs/plan.md` and `docs/spec.md` first.
 
 ## Responsibilities

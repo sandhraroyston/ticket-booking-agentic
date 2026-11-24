@@ -23,8 +23,33 @@ Each agent and command sets `model:` in its frontmatter.
   product-owner, and `/quick`.
 - **haiku** for `/status`, which is read-only and only summarizes `gh` output.
 
-If a sonnet agent struggles on an issue, run that issue on opus (e.g. #21 live polling, #30
-browser tracing). Change a model with a `/quick` PR.
+Change a default model with a `/quick` PR.
+
+### When to upgrade a model
+
+The label **`needs-opus`** on an issue means "build this issue with opus", whatever the agent's
+default. `/implement` reads it and runs the agent with `model: opus` for that issue only.
+
+Add `needs-opus` when any of these happens:
+
+| Who notices | Trigger |
+|---|---|
+| **qa** | CHANGES NEEDED because of a **quality** problem, not a small slip: wrong design, missed edge cases or error paths, race conditions, tests that don't really test the criterion, or code that works but is hard to follow |
+| **qa** | A **second** CHANGES NEEDED on the same issue |
+| **builder** | The same check still fails after **2 fix attempts**, or the agent isn't sure the design is right |
+| **builder** | The issue turns out to involve concurrency, locking, auth, or tricky async/timing behaviour |
+| **product-owner** | While grooming, the issue clearly involves the above (pre-label it) |
+| **human** | Any time you think the output isn't good enough |
+
+The one who adds the label says why in the verdict or handoff comment
+(`Model: needs-opus because ...`). A small slip (typo, a missed criterion, a lint error) is
+**not** a reason to upgrade; send it back to the same model.
+
+Likely candidates on the current backlog: #21 (live polling), #22 (checkout wiring), #30 (browser
+tracing and trace propagation), #36–#37 (deploy workflows).
+
+The opus agents (backend-dev, qa, sre-oncall) are already on the strongest model. If their work
+isn't good enough, the fix is a clearer issue (`/groom`), not a different model.
 
 ## Slash commands (`.claude/commands/`)
 

@@ -18,6 +18,13 @@ Read `AGENTS.md`, `docs/process.md`, the PR (`gh pr view <PR>`), and its linked 
 5. Check `ci` is green: `gh pr checks <PR>`.
 6. Post one PR comment (`gh pr comment`) with a header **APPROVE** or **CHANGES NEEDED**, a
    criterion-by-criterion table, and the test output summary.
+7. **Model check** (see `docs/agents.md` → When to upgrade a model). If the verdict is CHANGES
+   NEEDED because of a quality problem (wrong design, missed edge cases or error paths, races,
+   weak tests, hard-to-follow code), or this is the second CHANGES NEEDED on the issue, add the
+   label to the issue (`gh issue edit <N> --add-label needs-opus`) and add a line to the verdict:
+   `Model: needs-opus because <reason>`. Don't do this for small slips.
+   On APPROVE, you may still note `Model: consider needs-opus for similar issues because ...`
+   if the code passed but was shaky.
 
 ## Rules
 - You may add or modify integration and e2e tests (pytest + testcontainers, Playwright) on the PR

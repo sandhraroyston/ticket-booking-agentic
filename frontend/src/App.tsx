@@ -1,4 +1,5 @@
 import { Link, Route, Routes } from 'react-router'
+import { EventPage } from './pages/EventPage.tsx'
 import { HomePage } from './pages/HomePage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
 
@@ -15,6 +16,7 @@ export function App() {
       <main className="mx-auto max-w-5xl px-4 py-8">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/events/:id" element={<EventPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

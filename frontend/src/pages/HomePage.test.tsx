@@ -77,7 +77,7 @@ describe('HomePage', () => {
     expect(link).toHaveAttribute('href', '/events/b')
     await userEvent.click(link)
     expect(await screen.findByRole('heading', { name: 'Beta' })).toBeInTheDocument()
-    expect(screen.getByText('Seat map coming soon')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Legend' })).toBeInTheDocument()
   })
 
   it('shows an error with Retry that refetches', async () => {

@@ -10,3 +10,16 @@ export interface EventSummary {
   min_price_cents: number
   max_price_cents: number
 }
+
+export type SeatStatus = 'available' | 'held' | 'sold'
+
+// Hand-written for the mock seat map (issue #4); replaced by generated types later.
+export interface Seat {
+  id: string
+  section: string
+  row: string
+  number: number
+  /** Integer paise. */
+  price_cents: number
+  status: SeatStatus
+}

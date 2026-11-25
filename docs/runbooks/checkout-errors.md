@@ -31,6 +31,6 @@
 1. Open an incident issue (label `incident`) with the alert, timeline, evidence links and
    suspected cause.
 2. Open a fix PR with a regression test that links the incident. Normal workflow: QA verify,
-   then human `/ship`.
+   then human `/merge-pr`.
 3. The fix reaches dev through CD. Prod deploy is manual, done by a human.
 4. Close the incident with the root cause and follow-ups.

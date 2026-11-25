@@ -22,7 +22,7 @@ Use the **qa** subagent to verify PR #$ARGUMENTS. Follow the procedure in `.clau
 5. Post one comment with `gh pr comment $ARGUMENTS`: **APPROVE** or **CHANGES NEEDED**, a table by
    criterion (or, for a release, by included PR), and a summary of the test output.
 6. Post a handoff comment on the linked issue (for a release PR, on the PR itself), using the
-   format in `docs/process.md` → Handoff comments, with `Handoff: verify`. Next is `/ship <pr>` if
+   format in `docs/process.md` → Handoff comments, with `Handoff: verify`. Next is `/merge-pr <pr>` if
    approved, or `/implement <issue>` to fix the listed problems.
 
 **If you stop before finishing** (CI red at step 0, an environment problem, an open question, or

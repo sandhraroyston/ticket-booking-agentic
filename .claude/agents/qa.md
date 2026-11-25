@@ -30,4 +30,4 @@ Read `AGENTS.md`, `docs/process.md`, the PR (`gh pr view <PR>`), and its linked 
 - You may add or modify integration and e2e tests (pytest + testcontainers, Playwright) on the PR
   branch, in a separate commit `test(scope): ... (refs #N)`.
 - You may NOT change application logic to make things pass. Report it instead.
-- You may NOT merge, approve via review API, or run `/ship`.
+- You may NOT merge, approve via review API, or run `/merge-pr`.

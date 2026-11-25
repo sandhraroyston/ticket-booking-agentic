@@ -39,7 +39,8 @@ Stack: React + Vite + TypeScript (frontend), FastAPI + SQLAlchemy 2 + Alembic on
 - The agent that builds never verifies its own work (see `docs/process.md`).
 - End every `/implement` and `/verify` session, and any session that stops midway, with a
   `Handoff:` comment on the issue (format in `docs/process.md`). Push work in progress first.
-- Never merge your own PR. A human runs `/ship`.
+- Never merge your own PR. A human runs `/merge-pr` (not `/ship`, which is now a built-in that
+  only reviews).
 - `openapi.yaml` is the API source of truth. Change it first, then code.
 - Never put emails, passwords, tokens or payment data in logs or telemetry.
 - The CI job is named `ci` and is a required check. Never rename it. Whoever adds `backend/` or
@@ -54,7 +55,8 @@ Stack: React + Vite + TypeScript (frontend), FastAPI + SQLAlchemy 2 + Alembic on
 | User stories, acceptance criteria | `docs/spec.md` |
 | Components, data model, API | `docs/architecture.md` |
 | Agent team and permissions | `docs/agents.md`, `.claude/agents/` |
-| Groom → implement → verify → ship | `docs/process.md` (start a session with `/status`) |
+| Groom → implement → verify → merge | `docs/process.md` (start a session with `/status`) |
+| Run several issues in parallel | `docs/process.md` → Parallel work |
 | Telemetry, dashboards, PII rules | `docs/observability.md` |
 | Security practices | `docs/security.md` |
 | How AI is used in this project | `docs/ai-workflow.md` |

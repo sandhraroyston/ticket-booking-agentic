@@ -29,7 +29,7 @@ with a regression test. A human still reviews and ships the fix. The agent never
 ## Human checkpoints
 
 - The backlog is shown to the human before issues are created.
-- A human reviews every PR plus the QA verdict before `/ship`.
+- A human reviews every PR plus the QA verdict before `/merge-pr`.
 - Prod deploy needs manual approval.
 
 ## Decision log

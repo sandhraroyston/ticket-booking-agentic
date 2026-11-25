@@ -6,6 +6,9 @@ argument-hint: <issue-number>
 Implement issue #$ARGUMENTS.
 
 1. `gh issue view $ARGUMENTS`. Stop if it lacks the `ready` label.
+   Before starting, tell me which other `ready` issues could be built in parallel with this one
+   (rules in `docs/process.md` → Parallel work), with one line of reason each. Then carry on with
+   #$ARGUMENTS; don't start the others unless I ask.
 2. Pick the subagent by scope: **backend-dev** (backend/, openapi.yaml), **frontend-dev**
    (frontend/), or **devops** (Docker, CI/CD, infra). Split the work if it spans scopes.
    If the issue has the label **`needs-opus`**, run the subagent with `model: opus` (override its

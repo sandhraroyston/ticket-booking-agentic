@@ -6,10 +6,14 @@ type Mode = 'login' | 'signup'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function validate(email: string, password: string) {
+// Mirrors openapi.yaml: SignupRequest.password minLength 8, LoginRequest.password minLength 1.
+function validate(mode: Mode, email: string, password: string) {
+  let passwordError: string | null = null
+  if (mode === 'signup' && password.length < 8) passwordError = 'Password must be at least 8 characters.'
+  if (mode === 'login' && password.length === 0) passwordError = 'Enter your password.'
   return {
-    email: EMAIL_RE.test(email.trim()) ? null : 'Enter a valid email address.',
-    password: password.length >= 8 ? null : 'Password must be at least 8 characters.',
+    email: EMAIL_RE.test(email) ? null : 'Enter a valid email address.',
+    password: passwordError,
   }
 }
 
@@ -35,12 +39,13 @@ export function AuthPage({ mode }: { mode: Mode }) {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setFormError(null)
-    const result = validate(email, password)
+    const trimmedEmail = email.trim()
+    const result = validate(mode, trimmedEmail, password)
     setErrors(result)
     if (result.email || result.password) return
     setBusy(true)
     try {
-      await (isSignup ? auth.signup(email, password) : auth.login(email, password))
+      await (isSignup ? auth.signup(trimmedEmail, password) : auth.login(trimmedEmail, password))
       void navigate(from, { replace: true })
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Something went wrong. Try again.')

@@ -23,7 +23,7 @@ const newSession = (): AuthSession => ({ token: `mock-${crypto.randomUUID()}` })
 export async function signup(email: string, password: string): Promise<AuthSession> {
   await delay()
   const key = normalise(email)
-  if (users.has(key)) throw new AuthError('email_taken', 'An account with this email already exists.')
+  if (users.has(key)) throw new AuthError('email_taken', 'Email already registered')
   users.set(key, password)
   return newSession()
 }
@@ -31,7 +31,7 @@ export async function signup(email: string, password: string): Promise<AuthSessi
 export async function login(email: string, password: string): Promise<AuthSession> {
   await delay()
   if (users.get(normalise(email)) !== password) {
-    throw new AuthError('invalid_credentials', 'Incorrect email or password.')
+    throw new AuthError('invalid_credentials', 'Wrong email or password')
   }
   return newSession()
 }

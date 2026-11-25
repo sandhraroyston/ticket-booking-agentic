@@ -51,8 +51,8 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/events/:id" element={<EventPage />} />
-          <Route path="/login" element={<AuthPage mode="login" />} />
-          <Route path="/signup" element={<AuthPage mode="signup" />} />
+          <Route path="/login" element={<AuthPage key="login" mode="login" />} />
+          <Route path="/signup" element={<AuthPage key="signup" mode="signup" />} />
           <Route element={<RequireAuth />}>
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/orders" element={<OrdersPage />} />

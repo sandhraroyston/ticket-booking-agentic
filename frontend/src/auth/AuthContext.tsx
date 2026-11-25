@@ -24,7 +24,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(readToken)
 
   const store = useCallback((session: mockAuth.AuthSession) => {
-    sessionStorage.setItem(STORAGE_KEY, session.token)
+    try {
+      sessionStorage.setItem(STORAGE_KEY, session.token)
+    } catch {
+      // Storage blocked: keep the session in memory only.
+    }
     setToken(session.token)
   }, [])
 
@@ -34,7 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signup: async (email, password) => store(await mockAuth.signup(email, password)),
       login: async (email, password) => store(await mockAuth.login(email, password)),
       logout: () => {
-        sessionStorage.removeItem(STORAGE_KEY)
+        try {
+          sessionStorage.removeItem(STORAGE_KEY)
+        } catch {
+          // Storage blocked: nothing was persisted.
+        }
         setToken(null)
       },
     }),

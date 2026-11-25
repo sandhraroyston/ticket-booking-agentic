@@ -1,6 +1,6 @@
 # CI (see docs/plan.md section 11 and docs/process.md).
 # The main ruleset requires the status check "ci". Do NOT rename the job.
-# Whoever adds backend/ wires its lint and tests into this same job.
+# Backend (ruff, mypy, pytest against a Postgres 16 service) and frontend run in this one job.
 name: CI
 
 on:
@@ -14,8 +14,50 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    services:
+      # Throwaway database for the backend "DB up" tests. CI-only credentials.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Backend install (uv sync)
+        working-directory: backend
+        run: uv sync --locked
+
+      - name: Backend lint (ruff)
+        working-directory: backend
+        run: |
+          uv run --locked ruff format --check .
+          uv run --locked ruff check .
+
+      - name: Backend type-check (mypy)
+        working-directory: backend
+        run: uv run --locked mypy
+
+      - name: Backend tests (pytest)
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://ci:ci@localhost:5432/ci
+          REQUIRE_DB_TESTS: "1"
+        run: uv run --locked pytest
 
       - uses: actions/setup-node@v4
         with:

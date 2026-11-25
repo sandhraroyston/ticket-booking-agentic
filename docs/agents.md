@@ -20,7 +20,8 @@ Each agent and command sets `model:` in its frontmatter.
   double-booking constraints), qa (the independent safety net; a weaker verifier tends to
   approve what it doesn't fully understand), and sre-oncall (root cause from telemetry).
 - **sonnet** for well-known patterns where CI or QA catches mistakes: frontend-dev, devops,
-  product-owner, and `/quick`.
+  product-owner, `/quick`, and `/merge-pr` (mostly mechanical, but it is the last gate: it reads
+  the QA verdict and checks a fast-track PR's files against the always-QA list).
 - **haiku** for `/status`, which is read-only and only summarizes `gh` output.
 
 Change a default model with a `/quick` PR.
@@ -58,7 +59,7 @@ isn't good enough, the fix is a clearer issue (`/groom`), not a different model.
 | `/groom <issue>` | product-owner | grooming |
 | `/implement <issue>` | backend-dev / frontend-dev / devops (by label/scope) | implementation |
 | `/verify <pr>` | qa | verification |
-| `/merge-pr <pr>` | human-triggered (was `/ship`) | after review |
+| `/merge-pr <pr>` | (main session, sonnet), human-triggered (was `/ship`) | after review |
 | `/status` | (main session, haiku) | any time, read-only |
 | `/quick <what to change>` | (main session, sonnet) | fast-track changes, see `docs/process.md` |
 

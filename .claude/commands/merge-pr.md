@@ -1,6 +1,7 @@
 ---
 description: Ship a verified PR — squash into develop, or merge-commit a release into main (human-triggered)
 argument-hint: <pr-number>
+model: sonnet
 ---
 
 The human has reviewed PR #$ARGUMENTS and wants to merge it.

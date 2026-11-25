@@ -1,0 +1,4 @@
+# Redocly CLI config for `make api-lint` (issue #7).
+# recommended-strict = the recommended ruleset with every warning promoted to an error.
+extends:
+  - recommended-strict

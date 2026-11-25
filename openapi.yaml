@@ -1,0 +1,925 @@
+openapi: 3.1.0
+info:
+  title: Ticket Booking API
+  version: 0.1.0
+  summary: Reserved-seat ticket booking for small venues (MVP).
+  description: |
+    Source of truth for the Ticket Booking API (`docs/architecture.md`). Change this file first,
+    then make the backend and the frontend client match it.
+
+    Conventions:
+
+    - **Base path.** Browsers call the API under `/api`. nginx and the Vite dev proxy strip the
+      `/api` prefix, so the backend serves these paths at its root (spec decision Q11).
+    - **Money.** One currency, INR (Q22). Every `*_cents` field is an integer amount in
+      **paise** (minor unit), e.g. `125000` = ₹1,250.00.
+    - **Time.** Timestamps are RFC 3339 / ISO 8601 date-times in UTC.
+    - **IDs.** All resource ids are UUIDs, sent as strings.
+    - **Pagination.** None (Q23). List endpoints return a plain JSON array.
+    - **Auth.** `POST /auth/signup` and `POST /auth/login` return a JWT access token (60 min by
+      default, no refresh token, Q3/Q21). Protected endpoints require
+      `Authorization: Bearer <token>`.
+    - **Errors.** Every error response uses the shared `Error` schema `{code, message}` with an
+      optional `details` object. Clients branch on `code` (stable, machine-readable), never on
+      `message` (human-readable, may change).
+    - **Privacy.** The only payment field is the fake `card_number` on `POST /checkout`. It is
+      never stored, logged or sent to telemetry. Responses never reveal who holds or bought a
+      seat.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: /api
+    description: Browser-facing base path (stripped by nginx / the Vite proxy).
+tags:
+  - name: auth
+    description: Sign up and log in (US-1).
+  - name: events
+    description: Upcoming events and seat maps (US-2, US-3). Public.
+  - name: reservations
+    description: Seat holds of up to 6 seats for 10 minutes (US-4, US-5).
+  - name: checkout
+    description: Fake payment that converts a hold into an order (US-6, US-7).
+  - name: orders
+    description: The signed-in buyer's orders (US-8).
+  - name: health
+    description: Operator liveness and readiness checks (US-9).
+
+paths:
+  /auth/signup:
+    post:
+      operationId: signup
+      summary: Create an account and log in
+      description: |
+        Creates a buyer account and returns an access token, so the buyer is logged in right
+        away (Q21). The email is compared case-insensitively. The password is stored only as a
+        hash and must be at least 8 characters (Q4).
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            example:
+              email: buyer@example.com
+              password: correct-horse-battery
+      responses:
+        '201':
+          description: Account created. The buyer is logged in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '409':
+          description: The email is already registered (in any letter case).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: email_taken
+                message: Email already registered
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/login:
+    post:
+      operationId: login
+      summary: Log in with email and password
+      description: |
+        Returns an access token. A wrong password and an unknown email get the same 401
+        response, so the API does not reveal which emails are registered.
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: buyer@example.com
+              password: correct-horse-battery
+      responses:
+        '200':
+          description: Logged in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Wrong email or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: invalid_credentials
+                message: Wrong email or password
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /events:
+    get:
+      operationId: listEvents
+      summary: List upcoming events
+      description: |
+        Returns every event whose `starts_at` is in the future, sorted by `starts_at`
+        ascending. Past events are not returned. No pagination (Q23). Public.
+      tags: [events]
+      security: []
+      responses:
+        '200':
+          description: Upcoming events, soonest first. May be empty.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSummary'
+              example:
+                - id: 3f8a1c52-6d0e-4b8a-9a43-1b2c3d4e5f60
+                  name: Monsoon Jazz Night
+                  starts_at: '2026-12-05T14:30:00Z'
+                  venue:
+                    id: 9b1e2f30-1111-4c2d-8e3f-a0b1c2d3e4f5
+                    name: Jubilee Hall
+                    city: Mumbai
+                  min_price_cents: 50000
+                  max_price_cents: 125000
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      summary: Get one event
+      description: Same fields as the list item plus the description. Public.
+      tags: [events]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: The event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '404':
+          $ref: '#/components/responses/EventNotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /events/{id}/seats:
+    get:
+      operationId: getEventSeats
+      summary: Get an event's seat map with live availability
+      description: |
+        Returns every seat of the event with its price and status. A seat in an active,
+        unexpired hold is `held`; a sold seat is `sold`. Holds past their `expires_at` are
+        released lazily before this response is built, so their seats show as `available`
+        (Q5). The response never reveals who holds or bought a seat. Public. Clients poll this
+        every 5 s (Q12).
+      tags: [events]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: The seat map, ordered by section, row and number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatMap'
+        '404':
+          $ref: '#/components/responses/EventNotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /reservations:
+    post:
+      operationId: createReservation
+      summary: Hold 1 to 6 seats for 10 minutes
+      description: |
+        Holds the given seats of one event for 10 minutes (all-or-nothing). The event is the
+        one the seats belong to. A buyer may have at most one active hold per event (Q2); holds
+        on other events are allowed. Two concurrent holds on the same seat never both succeed:
+        the loser gets 409 `seats_unavailable`, never 500.
+      tags: [reservations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReservationRequest'
+            example:
+              seat_ids:
+                - 0b6f7a10-2a3b-4c5d-8e9f-001122334455
+                - 0b6f7a10-2a3b-4c5d-8e9f-001122334456
+      responses:
+        '201':
+          description: Seats held. They are now `held` for everyone.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: One or more seat ids do not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: not_found
+                message: Seat not found
+        '409':
+          description: |
+            Nothing was held. Either some requested seats are already held or sold
+            (`seats_unavailable`, with their ids in `details.seat_ids`), or the buyer already
+            has an active hold for this event (`active_hold_exists`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                seats_unavailable:
+                  summary: Some seats were just taken
+                  value:
+                    code: seats_unavailable
+                    message: Some seats were just taken
+                    details:
+                      seat_ids:
+                        - 0b6f7a10-2a3b-4c5d-8e9f-001122334456
+                active_hold_exists:
+                  summary: Buyer already has an active hold for this event
+                  value:
+                    code: active_hold_exists
+                    message: You already have an active hold for this event
+        '422':
+          description: |
+            Invalid request: 0 or more than 6 seat ids, duplicate ids, malformed ids, or seats
+            from different events. Nothing changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                too_many_seats:
+                  summary: More than 6 seats
+                  value:
+                    code: validation_error
+                    message: You can hold up to 6 seats
+                    details:
+                      errors:
+                        - field: seat_ids
+                          message: List should have at most 6 items
+                mixed_events:
+                  summary: Seats from different events
+                  value:
+                    code: validation_error
+                    message: All seats must belong to the same event
+                    details:
+                      errors:
+                        - field: seat_ids
+                          message: Seats belong to more than one event
+
+  /reservations/{id}:
+    delete:
+      operationId: releaseReservation
+      summary: Release a hold
+      description: |
+        Releases the buyer's hold: the reservation becomes `released` and its seats become
+        `available` (Q6). Idempotent: releasing an `expired` or `released` reservation again
+        also returns 204 and changes nothing. Another user's reservation returns 404.
+      tags: [reservations]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '204':
+          description: Released (or already expired / released).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ReservationNotFound'
+        '409':
+          description: The reservation was already converted to an order. The seats stay `sold`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: reservation_converted
+                message: This reservation has already been paid for
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /checkout:
+    post:
+      operationId: checkout
+      summary: Pay for a hold with a fake card and create an order
+      description: |
+        Converts the buyer's active, unexpired reservation into an order. The reservation row
+        is locked and `status = active` and `expires_at > now()` are checked in the same
+        transaction, so an expired hold is never sold. On success the seats become `sold` and
+        the reservation becomes `converted`.
+
+        Fake payment (Q8): any card number is accepted except `4000 0000 0000 0002`, which is
+        declined with 402 `payment_declined`; the hold then stays active. The card number is
+        never stored, logged or sent to telemetry.
+      tags: [checkout]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+            example:
+              reservation_id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+              card_number: 4242 4242 4242 4242
+      responses:
+        '201':
+          description: Paid. The order is created and the seats are sold.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          description: The fake payment was declined. The hold stays active.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: payment_declined
+                message: Payment declined
+        '404':
+          $ref: '#/components/responses/ReservationNotFound'
+        '409':
+          description: |
+            The reservation cannot be checked out. No order is created and no seat is sold.
+            `hold_expired`: past its `expires_at`, even if the sweeper has not run yet (Q1).
+            `reservation_converted`: already paid; no second order is created.
+            `reservation_released`: the buyer released the hold.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                hold_expired:
+                  summary: Hold expired
+                  value:
+                    code: hold_expired
+                    message: Hold expired
+                reservation_converted:
+                  summary: Already paid
+                  value:
+                    code: reservation_converted
+                    message: This reservation has already been paid for
+                reservation_released:
+                  summary: Hold was released
+                  value:
+                    code: reservation_released
+                    message: This hold was released
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /orders/me:
+    get:
+      operationId: listMyOrders
+      summary: List the signed-in buyer's orders
+      description: Only the caller's orders, newest first. Empty list if there are none.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's orders, newest first. May be empty.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /healthz:
+    get:
+      operationId: getHealth
+      summary: Liveness check
+      description: Returns 200 while the process is up. Does not touch the database.
+      tags: [health]
+      security: []
+      responses:
+        '200':
+          description: The process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: ok
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+
+  /readyz:
+    get:
+      operationId: getReadiness
+      summary: Readiness check
+      description: Returns 200 if PostgreSQL is reachable, otherwise 503.
+      tags: [health]
+      security: []
+      responses:
+        '200':
+          description: Ready to serve traffic.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: ok
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+        '503':
+          description: Not ready (PostgreSQL is unreachable).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: not_ready
+                message: Database unavailable
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token from `POST /auth/signup` or `POST /auth/login`, sent as
+        `Authorization: Bearer <token>`. A missing, expired or tampered token gets 401
+        `unauthorized`.
+
+  parameters:
+    EventId:
+      name: id
+      in: path
+      required: true
+      description: Event id.
+      schema:
+        type: string
+        format: uuid
+    ReservationId:
+      name: id
+      in: path
+      required: true
+      description: Reservation id.
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Missing, expired or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: unauthorized
+            message: Authentication required
+    ValidationError:
+      description: The request is malformed or fails validation. Nothing changes.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: validation_error
+            message: Request validation failed
+            details:
+              errors:
+                - field: password
+                  message: String should have at least 8 characters
+    EventNotFound:
+      description: No event with this id.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: not_found
+            message: Event not found
+    ReservationNotFound:
+      description: No reservation with this id that belongs to the caller.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: not_found
+            message: Reservation not found
+    ClientError:
+      description: Generic client error (e.g. unsupported method).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: bad_request
+            message: Bad request
+
+  schemas:
+    Error:
+      type: object
+      description: |
+        Shared error body for every non-2xx response. Known `code` values:
+
+        | code | status | when |
+        |---|---|---|
+        | `validation_error` | 422 | Malformed or invalid request (incl. 0 or more than 6 seats) |
+        | `unauthorized` | 401 | Missing, expired or invalid bearer token |
+        | `invalid_credentials` | 401 | Login with a wrong password or unknown email |
+        | `payment_declined` | 402 | Fake card `4000 0000 0000 0002` |
+        | `not_found` | 404 | Unknown id, or a reservation of another user |
+        | `email_taken` | 409 | Signup with an already registered email |
+        | `seats_unavailable` | 409 | Some requested seats are held or sold (`details.seat_ids`) |
+        | `active_hold_exists` | 409 | Buyer already has an active hold for this event |
+        | `hold_expired` | 409 | Checkout after `expires_at` |
+        | `reservation_converted` | 409 | Release or checkout of an already paid reservation |
+        | `reservation_released` | 409 | Checkout of a released reservation |
+        | `not_ready` | 503 | Readiness check failed |
+        | `bad_request` | 4xx | Other client errors |
+        | `internal_error` | 500 | Unexpected server error |
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable error code (see the table above).
+          examples: [hold_expired]
+        message:
+          type: string
+          description: Human-readable message. Never contains emails, passwords, tokens or card data.
+          examples: [Hold expired]
+        details:
+          $ref: '#/components/schemas/ErrorDetails'
+    ErrorDetails:
+      type: object
+      description: Optional structured context for some error codes.
+      properties:
+        seat_ids:
+          type: array
+          description: For `seats_unavailable`, the requested seats that are held or sold.
+          items:
+            type: string
+            format: uuid
+        errors:
+          type: array
+          description: For `validation_error`, one entry per invalid field.
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          description: Dotted path to the invalid field, e.g. `seat_ids` or `seat_ids.2`.
+        message:
+          type: string
+
+    SignupRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 8
+          maxLength: 128
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: Signed JWT. Never log it.
+          examples: [eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.signature]
+        token_type:
+          type: string
+          const: bearer
+        expires_in:
+          type: integer
+          minimum: 1
+          description: Lifetime in seconds (default 3600, configurable by env).
+          examples: [3600]
+
+    Venue:
+      type: object
+      required: [id, name, city]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: [Jubilee Hall]
+        city:
+          type: string
+          examples: [Mumbai]
+    EventSummary:
+      type: object
+      description: An upcoming event as shown in the events list.
+      required: [id, name, starts_at, venue, min_price_cents, max_price_cents]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: [Monsoon Jazz Night]
+        starts_at:
+          type: string
+          format: date-time
+        venue:
+          $ref: '#/components/schemas/Venue'
+        min_price_cents:
+          type: integer
+          minimum: 0
+          description: Lowest seat price of the event, in paise.
+          examples: [50000]
+        max_price_cents:
+          type: integer
+          minimum: 0
+          description: Highest seat price of the event, in paise.
+          examples: [125000]
+    EventDetail:
+      description: An event with its description.
+      allOf:
+        - $ref: '#/components/schemas/EventSummary'
+        - type: object
+          required: [description]
+          properties:
+            description:
+              type: string
+              description: Free text. May be empty.
+
+    SeatStatus:
+      type: string
+      enum: [available, held, sold]
+      description: |
+        `available`: can be held. `held`: in someone's active, unexpired hold. `sold`: in an order.
+    Seat:
+      type: object
+      required: [id, section, row, number, price_cents, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        section:
+          type: string
+          examples: [Stalls]
+        row:
+          type: string
+          examples: [A]
+        number:
+          type: integer
+          minimum: 1
+          examples: [12]
+        price_cents:
+          type: integer
+          minimum: 0
+          description: Seat price in paise.
+          examples: [125000]
+        status:
+          $ref: '#/components/schemas/SeatStatus'
+    SeatMap:
+      type: object
+      required: [event_id, seats]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        seats:
+          type: array
+          items:
+            $ref: '#/components/schemas/Seat'
+      example:
+        event_id: 3f8a1c52-6d0e-4b8a-9a43-1b2c3d4e5f60
+        seats:
+          - id: 0b6f7a10-2a3b-4c5d-8e9f-001122334455
+            section: Stalls
+            row: A
+            number: 1
+            price_cents: 125000
+            status: available
+          - id: 0b6f7a10-2a3b-4c5d-8e9f-001122334456
+            section: Stalls
+            row: A
+            number: 2
+            price_cents: 125000
+            status: held
+          - id: 0b6f7a10-2a3b-4c5d-8e9f-001122334457
+            section: Balcony
+            row: C
+            number: 7
+            price_cents: 50000
+            status: sold
+
+    ReservationStatus:
+      type: string
+      enum: [active, expired, released, converted]
+      description: |
+        `active`: holding seats until `expires_at`. `expired`: passed `expires_at` without
+        checkout. `released`: released by the buyer (Q6). `converted`: paid; an order exists.
+    CreateReservationRequest:
+      type: object
+      required: [seat_ids]
+      additionalProperties: false
+      properties:
+        seat_ids:
+          type: array
+          description: 1 to 6 distinct seats, all of the same event.
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+    Reservation:
+      type: object
+      required: [id, event_id, seat_ids, status, expires_at, total_cents]
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        seat_ids:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items:
+            type: string
+            format: uuid
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+        expires_at:
+          type: string
+          format: date-time
+          description: Server time when the hold expires (created_at + 10 minutes).
+        total_cents:
+          type: integer
+          minimum: 0
+          description: Sum of the held seats' prices, in paise.
+      example:
+        id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+        event_id: 3f8a1c52-6d0e-4b8a-9a43-1b2c3d4e5f60
+        seat_ids:
+          - 0b6f7a10-2a3b-4c5d-8e9f-001122334455
+          - 0b6f7a10-2a3b-4c5d-8e9f-001122334456
+        status: active
+        expires_at: '2026-11-25T10:10:00Z'
+        total_cents: 250000
+
+    CheckoutRequest:
+      type: object
+      required: [reservation_id, card_number]
+      additionalProperties: false
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+        card_number:
+          type: string
+          writeOnly: true
+          description: |
+            Fake card number: 12 to 19 digits, spaces allowed. `4000 0000 0000 0002` is
+            declined. Never stored, logged or sent to telemetry.
+          pattern: '^[0-9 ]{12,23}$'
+          examples: [4242 4242 4242 4242]
+    OrderEvent:
+      type: object
+      required: [id, name, starts_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+    OrderSeat:
+      type: object
+      required: [id, section, row, number, price_cents]
+      properties:
+        id:
+          type: string
+          format: uuid
+        section:
+          type: string
+        row:
+          type: string
+        number:
+          type: integer
+          minimum: 1
+        price_cents:
+          type: integer
+          minimum: 0
+          description: Price paid for this seat, in paise.
+    Order:
+      type: object
+      required: [id, reservation_id, confirmation_code, event, seats, total_cents, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        confirmation_code:
+          type: string
+          description: '`TB-` + 8 uppercase alphanumerics, unique (Q7).'
+          pattern: '^TB-[A-Z0-9]{8}$'
+          examples: [TB-7K2M9QXA]
+        event:
+          $ref: '#/components/schemas/OrderEvent'
+        seats:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items:
+            $ref: '#/components/schemas/OrderSeat'
+        total_cents:
+          type: integer
+          minimum: 0
+          description: Sum of the seat prices, in paise.
+        created_at:
+          type: string
+          format: date-time
+      example:
+        id: 5d1f0c2e-8a7b-4c6d-9e0f-112233445566
+        reservation_id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+        confirmation_code: TB-7K2M9QXA
+        event:
+          id: 3f8a1c52-6d0e-4b8a-9a43-1b2c3d4e5f60
+          name: Monsoon Jazz Night
+          starts_at: '2026-12-05T14:30:00Z'
+        seats:
+          - id: 0b6f7a10-2a3b-4c5d-8e9f-001122334455
+            section: Stalls
+            row: A
+            number: 1
+            price_cents: 125000
+          - id: 0b6f7a10-2a3b-4c5d-8e9f-001122334456
+            section: Stalls
+            row: A
+            number: 2
+            price_cents: 125000
+        total_cents: 250000
+        created_at: '2026-11-25T10:04:31Z'
+
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok

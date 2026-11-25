@@ -141,8 +141,9 @@ terminals. The main session:
 3. Reports each PR as its subagent finishes.
 
 Then, for each PR: `/verify <pr>` (the qa agent, never the builder), and after APPROVE the human
-runs `/merge-pr <pr>`. If a later PR conflicts with one merged before it, rebase that branch on
-`develop` and re-run `/verify`.
+runs `/merge-pr <pr>`. If a later PR conflicts with one merged before it, merge `develop` into
+that branch (`git merge origin/develop`; never rebase, which would need a force-push), push, and
+re-run `/verify`.
 
 **Alternative: one terminal per issue.** Create the worktree as above, then `cd ../tb-<N> &&
 claude` and run `/implement <N>` there.

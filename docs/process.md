@@ -18,12 +18,12 @@ QA verdicts, issues in progress, and the next `ready` issue, then recommends one
    **It never merges.**
 3. **Verify**: `/clear`, then `/verify <pr>`. QA checks out the PR fresh, runs `make test`, checks
    each acceptance criterion, and posts **APPROVE** or **CHANGES NEEDED** as a PR comment.
-4. **Ship**: a human reviews the diff and the QA verdict, then runs `/ship <pr>`. That enables
+4. **Merge**: a human reviews the diff and the QA verdict, then runs `/merge-pr <pr>`. That enables
    squash auto-merge into `develop`, and the PR merges once CI is green.
 5. **Deploy to dev**: merging to `develop` triggers CD (`cd-dev.yml`), which deploys to dev
    automatically.
 6. **Release**: when `develop` is ready, open a PR from `develop` into `main`, `/verify` it, and
-   `/ship` it. Release PRs are merged with a **merge commit**, not squash.
+   `/merge-pr` it. Release PRs are merged with a **merge commit**, not squash.
 7. **Deploy to prod**: manual only (`deploy-prod.yml`, `production` environment with required
    approval), and only from `main`.
 
@@ -36,7 +36,7 @@ Low-risk changes may skip step 3 (Verify). Use `/quick <what to change>` instead
 - an issue (labeled `fast-track`),
 - a branch cut from `develop` and a PR **into `develop`** with `Closes #N`,
 - a green `ci` check,
-- the human's review of the diff before `/ship`.
+- the human's review of the diff before `/merge-pr`.
 
 | May skip QA (fast track) | Always needs QA (`/verify`) |
 |---|---|
@@ -48,7 +48,7 @@ Low-risk changes may skip step 3 (Verify). Use `/quick <what to change>` instead
 | | Anything touching security, auth, telemetry or PII |
 | | Release PRs (`develop → main`) |
 
-If a change mixes both columns, it is **not** fast track. `/ship` checks the changed files of a
+If a change mixes both columns, it is **not** fast track. `/merge-pr` checks the changed files of a
 `fast-track` PR and refuses if any is in the right-hand column.
 
 ## Handoff comments
@@ -114,15 +114,41 @@ Rules that follow from this:
 
 ## Parallel work
 
-Independent issues can run in separate git worktrees, each with its own Claude session:
+Independent `ready` issues can be built at the same time. Run at most 3 at a time.
 
-```bash
-git fetch origin
-git worktree add ../tb-<N> -b <type>/<N>-<slug> origin/develop
-```
+**Which issues can run in parallel.** Two `ready` issues are parallel-safe when:
+- neither depends on the other (check the issue's "Depends on" line; every dependency is closed),
+- they are in different scopes (`frontend/` vs `backend/` vs infra), or in the same scope but
+  touch clearly separate files,
+- at most one of them changes shared files: `openapi.yaml`, `.github/workflows/ci.yml`,
+  `Makefile`, `compose.yaml`, migrations.
 
-Each worktree sets its own `COMPOSE_PROJECT_NAME` and ports. Run at most 3 at a time. Remove
-worktrees after merge (`git worktree remove ../tb-<N>`).
+If two issues share a file from the last bullet, run them one after the other. `/status` and
+`/implement` list the parallel-safe `ready` issues, with the reason, before any new
+implementation starts.
+
+**How to run them (recommended: from the main session with subagents).** Ask the main session,
+e.g. "implement #6 and #9 in parallel". You don't need to `cd` into any folder or open more
+terminals. The main session:
+1. For each issue, creates the linked branch (`gh issue develop <N> --base develop --name
+   <type>/<N>-<slug>`), and for every issue after the first, a worktree on that branch:
+   `git fetch origin && git worktree add ../tb-<N> <type>/<N>-<slug>`. The first issue can use the
+   main checkout.
+2. Starts one dev subagent per issue (backend-dev, frontend-dev or devops) in the background,
+   each told its absolute working directory and which folders it must not touch. Each follows
+   `/implement` steps 4–8: tests, `make lint` and `make test`, PR into `develop`, `Handoff:`
+   comment. If an issue has `needs-opus`, its subagent runs with `model: opus`.
+3. Reports each PR as its subagent finishes.
+
+Then, for each PR: `/verify <pr>` (the qa agent, never the builder), and after APPROVE the human
+runs `/merge-pr <pr>`. If a later PR conflicts with one merged before it, rebase that branch on
+`develop` and re-run `/verify`.
+
+**Alternative: one terminal per issue.** Create the worktree as above, then `cd ../tb-<N> &&
+claude` and run `/implement <N>` there.
+
+Each worktree that runs Docker sets its own `COMPOSE_PROJECT_NAME` and ports. Remove worktrees
+after merge (`git worktree remove ../tb-<N>`).
 
 ## Labels
 

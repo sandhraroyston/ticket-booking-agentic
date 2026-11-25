@@ -89,7 +89,7 @@ verifies its own work.
    `feat(scope): msg (refs #N)`, push, open a PR into `develop` with `Closes #N`. Never merge.
 3. `/clear` then `/verify <pr>`: qa checks out the PR fresh, runs `make test`, checks each
    acceptance criterion, posts APPROVE / CHANGES NEEDED as a PR comment.
-4. Human reviews diff + QA verdict, then `/ship <pr>` (squash auto-merge into `develop` after CI is green).
+4. Human reviews diff + QA verdict, then `/merge-pr <pr>` (squash auto-merge into `develop` after CI is green).
 5. Merge to `develop` → CD deploys to dev automatically.
 6. Release: PR `develop → main`, verified and shipped with a merge commit (not squash). Prod
    deploy is manual with approval, from `main` only.
@@ -159,7 +159,7 @@ backend/  frontend/  mcp-server/  infra/ (grafana, otel-collector, deploy)  scri
 docs/ spec.md architecture.md agents.md process.md observability.md security.md
       ai-workflow.md runbooks/checkout-errors.md
 .github/ ISSUE_TEMPLATE/task.yml  pull_request_template.md  workflows/
-.claude/ settings.json  agents/*.md  commands/groom.md implement.md verify.md ship.md
+.claude/ settings.json  agents/*.md  commands/groom.md implement.md verify.md merge-pr.md
 .mcp.json                 (github, grafana)
 ```
 

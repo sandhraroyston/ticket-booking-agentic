@@ -58,7 +58,7 @@ isn't good enough, the fix is a clearer issue (`/groom`), not a different model.
 | `/groom <issue>` | product-owner | grooming |
 | `/implement <issue>` | backend-dev / frontend-dev / devops (by label/scope) | implementation |
 | `/verify <pr>` | qa | verification |
-| `/ship <pr>` | human-triggered | after review |
+| `/merge-pr <pr>` | human-triggered (was `/ship`) | after review |
 | `/status` | (main session, haiku) | any time, read-only |
 | `/quick <what to change>` | (main session, sonnet) | fast-track changes, see `docs/process.md` |
 
